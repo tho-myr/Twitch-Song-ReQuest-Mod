@@ -21,6 +21,10 @@ CustomSongListTableCell *CustomSongListTableCell::PopulateWithSongData(
     statusLabel->set_text("Downloading...");
     this->entry = songListObject;
     return this;
+  } else if (songListObject->failed) {
+    statusLabel->set_text("Download Failed");
+    this->entry = songListObject;
+    return this;
   } else {
     statusLabel->set_text("Click to download");
   }

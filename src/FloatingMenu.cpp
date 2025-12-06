@@ -153,7 +153,7 @@ void TSRQ::FloatingMenu::SelectSong(HMUI::TableView *table, int id) {
 
       BeatSaver::Models::Beatmap songToPlay = songList[id]->song.value();
 
-      BSML::MainThreadScheduler::Schedule([this, songToPlay] {
+      BSML::MainThreadScheduler::Schedule([this, songToPlay, id] {
         auto versions = songToPlay.GetVersions();
         auto &beatmap = versions.front();
         std::string mapHash = beatmap.GetHash();
@@ -162,6 +162,9 @@ void TSRQ::FloatingMenu::SelectSong(HMUI::TableView *table, int id) {
           EnterSolo(level);
         } else {
           INFO("TSRQ: level is empty");
+          songList[id]->setIsDownloaded(false);
+          songList[id]->setFailed(true);
+          this->RefreshTable();
           return;
         }
       });
@@ -179,17 +182,19 @@ void TSRQ::FloatingMenu::SelectSong(HMUI::TableView *table, int id) {
         BeatSaver::API::BeatmapDownloadInfo(songList[id]->song.value());
     std::optional<std::string> path = BeatSaver::API::DownloadBeatmap(dlInfo);
 
-    BSML::MainThreadScheduler::Schedule([this, id] {
+    if (path.has_value()) {
+        auto task = SongCore::API::Loading::RefreshSongs(false);
+        // Wait for songs to be refreshed
+        task.wait();
+    }
+
+    BSML::MainThreadScheduler::Schedule([this, id, path] {
       songList[id]->setIsDownloading(false);
-      this->RefreshTable();
-    });
-
-    auto task = SongCore::API::Loading::RefreshSongs(false);
-    // Wait for songs to be refreshed
-    task.wait();
-
-    BSML::MainThreadScheduler::Schedule([this, id] {
-      songList[id]->setIsDownloaded(true);
+      if (path.has_value()) {
+          songList[id]->setIsDownloaded(true);
+      } else {
+          songList[id]->setFailed(true);
+      }
       this->RefreshTable();
     });
   }).detach();

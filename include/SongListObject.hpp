@@ -15,6 +15,7 @@ namespace TSRQ
         std::optional<BeatSaver::Models::Beatmap> song;
         bool downloading = false;
         bool isDownloaded = false;
+        bool failed = false;
 
         void setSong(std::optional<BeatSaver::Models::Beatmap> song) {
             this->song = song;
@@ -22,10 +23,15 @@ namespace TSRQ
 
         void setIsDownloading(bool downloading) {
             this->downloading = downloading;
+            if (downloading) this->failed = false;
         }
 
         void setIsDownloaded(bool isDownloaded) {
             this->isDownloaded = isDownloaded;
+        }
+        
+        void setFailed(bool failed) {
+            this->failed = failed;
         }
     };
 }
