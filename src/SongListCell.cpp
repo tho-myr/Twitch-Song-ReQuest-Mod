@@ -27,13 +27,17 @@ CustomSongListTableCell *CustomSongListTableCell::PopulateWithSongData(
   };
 
   if (songListObject->isDownloaded) {
-    statusLabel->set_text("In Collection");
+    statusLabel->set_text("In Collection. Click to Play");
+    statusLabel->set_color(UnityEngine::Color::get_green());
   } else if (songListObject->downloading) {
     statusLabel->set_text(fmt::format("Downloading... {:.0f}%", songListObject->progress * 100));
+    statusLabel->set_color(UnityEngine::Color::get_cyan());
   } else if (songListObject->failed) {
-    statusLabel->set_text("Download Failed");
+    statusLabel->set_text("Download Failed. Click to retry");
+    statusLabel->set_color(UnityEngine::Color::get_red());
   } else {
     statusLabel->set_text("Click to download");
+    statusLabel->set_color(UnityEngine::Color::get_cyan());
   }
 
   this->entry = songListObject;
