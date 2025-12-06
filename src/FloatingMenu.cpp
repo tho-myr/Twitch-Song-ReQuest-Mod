@@ -12,6 +12,14 @@
 #include "UnityEngine/Resources.hpp"
 #include "UnityEngine/SceneManagement/Scene.hpp"
 #include "UnityEngine/SceneManagement/SceneManager.hpp"
+#include "UnityEngine/Texture2D.hpp"
+#include "UnityEngine/ImageConversion.hpp"
+#include "UnityEngine/Sprite.hpp"
+#include "UnityEngine/Rect.hpp"
+#include "UnityEngine/Vector2.hpp"
+#include "UnityEngine/Vector4.hpp"
+#include "UnityEngine/SpriteMeshType.hpp"
+#include "UnityEngine/TextureFormat.hpp"
 #include "assets.hpp"
 #include "beatsaverplusplus/shared/BeatSaver.hpp"
 #include "bsml/shared/BSML-Lite/Creation/Image.hpp"
@@ -33,7 +41,7 @@ SafePtrUnity<TSRQ::FloatingMenu> TSRQ::FloatingMenu::instance;
 using namespace GlobalNamespace;
 
 // Runs on creation
-void TSRQ::FloatingMenu::ctor() { this->cellSize = 8.05f; }
+void TSRQ::FloatingMenu::ctor() { this->cellSize = 14.0f; }
 
 void TSRQ::FloatingMenu::Initialize() {
   if (initialized)
@@ -54,6 +62,8 @@ void TSRQ::FloatingMenu::Initialize() {
   // "Move by Pressing a trigger");
 
   BSML::Lite::AddHoverHint(menu, "Move by Pressing a trigger");
+
+  BeatSaver::API::Init(SongCore::API::Loading::GetPreferredCustomLevelPath());
 
   if (this->songTableData != nullptr &&
       this->songTableData->m_CachedPtr.m_value != nullptr) {
@@ -126,7 +136,7 @@ HMUI::TableCell *TSRQ::FloatingMenu::CellForIdx(HMUI::TableView *tableView,
 
 void TSRQ::FloatingMenu::RefreshTable(bool fullReload) {
   INFO("TSRQ: RefreshTable");
-  BSML::MainThreadScheduler::Schedule([this] {
+  BSML::MainThreadScheduler::Schedule([this, fullReload] {
     // Sort entry list
     // std::stable_sort(downloadEntryList.begin(), downloadEntryList.end(),
     //     [] (DownloadHistoryEntry* entry1, DownloadHistoryEntry* entry2)
@@ -134,7 +144,11 @@ void TSRQ::FloatingMenu::RefreshTable(bool fullReload) {
     //         return (entry1->orderValue() < entry2->orderValue());
     //     }
     // );
-    this->songListTable()->ReloadData();
+    if (fullReload) {
+        this->songListTable()->ReloadData();
+    } else {
+        this->songListTable()->ReloadDataKeepingPosition();
+    }
     // coro(this->limitedFullTableReload->Call());
   });
 }
@@ -164,7 +178,7 @@ void TSRQ::FloatingMenu::SelectSong(HMUI::TableView *table, int id) {
           INFO("TSRQ: level is empty");
           songList[id]->setIsDownloaded(false);
           songList[id]->setFailed(true);
-          this->RefreshTable();
+          this->RefreshTable(false);
           return;
         }
       });
@@ -174,13 +188,24 @@ void TSRQ::FloatingMenu::SelectSong(HMUI::TableView *table, int id) {
   }
 
   songList[id]->downloading = true;
-  this->RefreshTable();
+  songList[id]->progress = 0.0f;
+  this->RefreshTable(false);
 
   std::thread([this, id] {
     // Construct dl info and start dl
     auto dlInfo =
         BeatSaver::API::BeatmapDownloadInfo(songList[id]->song.value());
-    std::optional<std::string> path = BeatSaver::API::DownloadBeatmap(dlInfo);
+    
+    auto progressCallback = [this, id](float progress) {
+        BSML::MainThreadScheduler::Schedule([this, id, progress] {
+            songList[id]->progress = progress;
+            if(songList[id]->progressUpdateCallback) {
+                songList[id]->progressUpdateCallback(progress);
+            }
+        });
+    };
+
+    std::optional<std::string> path = BeatSaver::API::DownloadBeatmap(dlInfo, progressCallback);
 
     if (path.has_value()) {
         auto task = SongCore::API::Loading::RefreshSongs(false);
@@ -195,7 +220,7 @@ void TSRQ::FloatingMenu::SelectSong(HMUI::TableView *table, int id) {
       } else {
           songList[id]->setFailed(true);
       }
-      this->RefreshTable();
+      this->RefreshTable(false);
     });
   }).detach();
 }
@@ -285,16 +310,43 @@ void TSRQ::FloatingMenu::push(TSRQ::SongListObject *songListObject) {
   std::optional<BeatSaver::Models::Beatmap> song = songListObject->song;
   if (!song.has_value())
     return;
+  
+  if (song->GetVersions().empty()) {
+      ERROR("Song has no versions!");
+      return;
+  }
+
   INFO("TSRQ: Pushing song {}", song->GetMetadata().GetSongName());
 
-  std::optional<SongCore::SongLoader::CustomBeatmapLevel *> local =
+  SongCore::SongLoader::CustomBeatmapLevel *local =
       SongCore::API::Loading::GetLevelByHash(
           song->GetVersions().front().GetHash());
 
-  if (local.has_value()) {
-    songListObject->isDownloaded = true;
+  if (local != nullptr) {
+    // Verify that the level actually exists on disk
+    std::string customLevelPath(local->get_customLevelPath());
+    if (std::filesystem::exists(customLevelPath)) {
+        songListObject->isDownloaded = true;
+    }
   }
 
-  this->songList.push_back(songListObject);
-  this->RefreshTable();
+  // Fetch cover image
+  std::thread([songListObject, this] {
+      auto coverFuture = BeatSaver::API::GetCoverImageAsync(songListObject->song.value().GetVersions().front());
+      auto coverData = coverFuture.get();
+      if (coverData.IsSuccessful() && coverData.responseData.has_value()) {
+           std::vector<uint8_t> bytes = coverData.responseData.value();
+           BSML::MainThreadScheduler::Schedule([songListObject, bytes, this]() mutable {
+               Array<uint8_t>* byteArray = il2cpp_utils::vectorToArray(bytes);
+               UnityEngine::Texture2D* texture = UnityEngine::Texture2D::New_ctor(2, 2, UnityEngine::TextureFormat::RGBA32, false);
+               UnityEngine::ImageConversion::LoadImage(texture, byteArray);
+               UnityEngine::Sprite* sprite = UnityEngine::Sprite::Create(texture, UnityEngine::Rect(0, 0, texture->get_width(), texture->get_height()), UnityEngine::Vector2(0.5f, 0.5f), 100.0f, 0, UnityEngine::SpriteMeshType::FullRect, UnityEngine::Vector4::get_zero(), false);
+               songListObject->cover = sprite;
+               this->RefreshTable(false);
+           });
+      }
+  }).detach();
+
+  this->songList.insert(this->songList.begin(), songListObject);
+  this->RefreshTable(false);
 }

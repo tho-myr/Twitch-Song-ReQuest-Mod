@@ -2,6 +2,7 @@
 
 #include "UnityEngine/RectTransform.hpp"
 #include "main.hpp"
+#include "bsml/shared/BSML/MainThreadScheduler.hpp"
 
 DEFINE_TYPE(TSRQ, CustomSongListTableCell)
 namespace TSRQ {
@@ -13,38 +14,41 @@ CustomSongListTableCell *CustomSongListTableCell::PopulateWithSongData(
   songName->set_text(song.value().GetName());
   levelAuthorName->set_text(song.value().GetMetadata().GetLevelAuthorName());
 
+  if (songListObject->cover) {
+      coverImage->set_sprite(songListObject->cover);
+  } else {
+      coverImage->set_sprite(nullptr);
+  }
+
+  songListObject->progressUpdateCallback = [this](float progress) {
+       BSML::MainThreadScheduler::Schedule([this, progress] {
+           UpdateProgress(progress);
+       });
+  };
+
   if (songListObject->isDownloaded) {
     statusLabel->set_text("In Collection");
-    this->entry = songListObject;
-    return this;
   } else if (songListObject->downloading) {
-    statusLabel->set_text("Downloading...");
-    this->entry = songListObject;
-    return this;
+    statusLabel->set_text(fmt::format("Downloading... {:.0f}%", songListObject->progress * 100));
   } else if (songListObject->failed) {
     statusLabel->set_text("Download Failed");
-    this->entry = songListObject;
-    return this;
   } else {
     statusLabel->set_text("Click to download");
   }
 
-  /*songName->set_text(beatmap->GetMetadata().GetSongName() + " | " +
-  beatmap->GetMetadata().GetSongAuthorName());
-  levelAuthorName->set_text(beatmap->GetMetadata().GetLevelAuthorName());*/
-
-  // statusLabel->set_text(entry->statusMessage());
   this->entry = songListObject;
-  // entry->UpdateProgressHandler = [this]() {
-  //     UpdateProgress();
-  // };
   return this;
+}
+
+void CustomSongListTableCell::UpdateProgress(float progress) {
+    if (entry && entry->downloading) {
+        statusLabel->set_text(fmt::format("Downloading... {:.0f}%", progress * 100));
+    }
 }
 
 void CustomSongListTableCell::RefreshBgState() {
   bgContainer->set_color(
       UnityEngine::Color(0, 0, 0, highlighted ? 0.8f : 0.45f));
-  // RefreshBar();
 }
 
 // void CustomSongListTableCell::RefreshBar() {
@@ -82,6 +86,8 @@ void CustomSongListTableCell::HighlightDidChange(
 }
 
 void CustomSongListTableCell::WasPreparedForReuse() {
-  // entry->UpdateProgressHandler = nullptr;
+  if (entry) {
+      entry->progressUpdateCallback = nullptr;
+  }
 }
 } // namespace TSRQ

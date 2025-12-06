@@ -14,6 +14,7 @@
 #include "beatsaber-hook/shared/utils/hooking.hpp"
 #include "beatsaber-hook/shared/utils/il2cpp-utils.hpp"
 #include "beatsaverplusplus/shared/BeatSaver.hpp"
+#include "songcore/shared/SongCore.hpp"
 #include "bsml/shared/BSML.hpp"
 #include "bsml/shared/BSML/MainThreadScheduler.hpp"
 #include "custom-types/shared/register.hpp"
@@ -191,6 +192,7 @@ extern "C" __attribute__((visibility("default"))) void late_load() {
   custom_types::Register::AutoRegister();
 
   songDetails = SongDetailsCache::SongDetails::Init();
+  BeatSaver::API::Init(SongCore::API::Loading::GetPreferredCustomLevelPath());
 
   // Register settings menu
   // QuestUI::Register::RegisterModSettingsViewController(modInfo, DidActivate);

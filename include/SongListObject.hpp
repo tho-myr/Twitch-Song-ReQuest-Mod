@@ -8,6 +8,8 @@
 #include "assets.hpp"
 #include "beatsaverplusplus/shared/Models/Beatmap.hpp"
 
+#include "UnityEngine/Sprite.hpp"
+
 namespace TSRQ
 {
     class SongListObject {
@@ -16,6 +18,9 @@ namespace TSRQ
         bool downloading = false;
         bool isDownloaded = false;
         bool failed = false;
+        float progress = 0.0f;
+        UnityEngine::Sprite* cover = nullptr;
+        std::function<void(float)> progressUpdateCallback;
 
         void setSong(std::optional<BeatSaver::Models::Beatmap> song) {
             this->song = song;
@@ -23,7 +28,10 @@ namespace TSRQ
 
         void setIsDownloading(bool downloading) {
             this->downloading = downloading;
-            if (downloading) this->failed = false;
+            if (downloading) {
+                this->failed = false;
+                this->progress = 0.0f;
+            }
         }
 
         void setIsDownloaded(bool isDownloaded) {

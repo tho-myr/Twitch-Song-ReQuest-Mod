@@ -29,7 +29,7 @@ DECLARE_CLASS_CODEGEN(TSRQ, CustomSongListTableCell, HMUI::TableCell,
     DECLARE_OVERRIDE_METHOD_MATCH(void, HighlightDidChange, &HMUI::SelectableCell::HighlightDidChange, HMUI::SelectableCell::TransitionType transitionType);
     DECLARE_OVERRIDE_METHOD_MATCH(void, WasPreparedForReuse, &HMUI::TableCell::WasPreparedForReuse);
     DECLARE_INSTANCE_FIELD(HMUI::ImageView*, bgContainer);
-    DECLARE_INSTANCE_FIELD(HMUI::ImageView*, bgProgress);
+    DECLARE_INSTANCE_FIELD(HMUI::ImageView*, coverImage);
     DECLARE_INSTANCE_FIELD(TMPro::TextMeshProUGUI*, songName);
     DECLARE_INSTANCE_FIELD(TMPro::TextMeshProUGUI*, levelAuthorName);
     DECLARE_INSTANCE_FIELD(TMPro::TextMeshProUGUI*, statusLabel);
@@ -38,7 +38,7 @@ public:
     // Song entry to have a reference to the song data
     TSRQ::SongListObject* entry;
     CustomSongListTableCell* PopulateWithSongData(TSRQ::SongListObject* songListObject);
-    // void UpdateProgress();
+    void UpdateProgress(float progress);
     // void RefreshBar();
     void RefreshBgState();
 )
