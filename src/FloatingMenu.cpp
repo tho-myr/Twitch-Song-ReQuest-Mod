@@ -41,7 +41,10 @@ SafePtrUnity<TSRQ::FloatingMenu> TSRQ::FloatingMenu::instance;
 using namespace GlobalNamespace;
 
 // Runs on creation
-void TSRQ::FloatingMenu::ctor() { this->cellSize = 14.0f; }
+void TSRQ::FloatingMenu::ctor() { 
+    this->cellSize = 14.0f; 
+    this->spriteCache = System::Collections::Generic::List_1<UnityEngine::Sprite*>::New_ctor();
+}
 
 void TSRQ::FloatingMenu::Initialize() {
   if (initialized)
@@ -343,6 +346,9 @@ void TSRQ::FloatingMenu::push(TSRQ::SongListObject *songListObject) {
                UnityEngine::Texture2D* texture = UnityEngine::Texture2D::New_ctor(2, 2, UnityEngine::TextureFormat::RGBA32, false);
                UnityEngine::ImageConversion::LoadImage(texture, byteArray);
                UnityEngine::Sprite* sprite = UnityEngine::Sprite::Create(texture, UnityEngine::Rect(0, 0, texture->get_width(), texture->get_height()), UnityEngine::Vector2(0.5f, 0.5f), 100.0f, 0, UnityEngine::SpriteMeshType::FullRect, UnityEngine::Vector4::get_zero(), false);
+               UnityEngine::Object::DontDestroyOnLoad(texture);
+               UnityEngine::Object::DontDestroyOnLoad(sprite);
+               if (this->spriteCache) this->spriteCache->Add(sprite);
                songListObject->cover = sprite;
                this->RefreshTable(false);
            });

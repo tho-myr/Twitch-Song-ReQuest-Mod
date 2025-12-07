@@ -20,7 +20,7 @@ namespace TSRQ
         bool failed = false;
         bool songNotFound = false;
         float progress = 0.0f;
-        UnityEngine::Sprite* cover = nullptr;
+        SafePtrUnity<UnityEngine::Sprite> cover;
         std::function<void(float)> progressUpdateCallback;
 
         void setSong(std::optional<BeatSaver::Models::Beatmap> song) {

@@ -14,6 +14,8 @@
 #include "GlobalNamespace/SoloFreePlayFlowCoordinator.hpp"
 #include "GlobalNamespace/MultiplayerLevelSelectionFlowCoordinator.hpp"
 #include "GlobalNamespace/LevelSelectionFlowCoordinator.hpp"
+#include "System/Collections/Generic/List_1.hpp"
+#include "UnityEngine/Sprite.hpp"
 
 
 using namespace GlobalNamespace;
@@ -36,6 +38,7 @@ DECLARE_CLASS_CODEGEN_INTERFACES(TSRQ, FloatingMenu, UnityEngine::MonoBehaviour,
     DECLARE_INSTANCE_METHOD(void, SelectSong, HMUI::TableView* table, int id);
     DECLARE_INSTANCE_METHOD(void, PostParse);
     DECLARE_INSTANCE_FIELD(BSML::CustomListTableData*, songTableData);
+    DECLARE_INSTANCE_FIELD(System::Collections::Generic::List_1<UnityEngine::Sprite*>*, spriteCache);
 
     DECLARE_OVERRIDE_METHOD_MATCH(HMUI::TableCell*, CellForIdx, &HMUI::TableView::IDataSource::CellForIdx, HMUI::TableView* tableView, int idx);
     DECLARE_OVERRIDE_METHOD_MATCH(float, CellSize, &HMUI::TableView::IDataSource::CellSize);
