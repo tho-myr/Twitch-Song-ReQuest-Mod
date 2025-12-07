@@ -22,19 +22,6 @@ CustomSongListTableCell *CustomSongListTableCell::PopulateWithSongData(
       return this;
   }
 
-  if (songListObject->isDownloaded) {
-      auto versions = song.value().GetVersions();
-      if (!versions.empty()) {
-          auto &beatmap = versions.front();
-          std::string mapHash = beatmap.GetHash();
-          auto level = SongCore::API::Loading::GetLevelByHash(mapHash);
-          if (level == nullptr) {
-              songListObject->isDownloaded = false;
-              songListObject->songNotFound = true;
-          }
-      }
-  }
-
   if (songName)
       songName->set_text(song.value().GetName());
   if (levelAuthorName)
