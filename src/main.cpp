@@ -198,8 +198,7 @@ extern "C" __attribute__((visibility("default"))) void late_load() {
   // QuestUI::Register::RegisterModSettingsViewController(modInfo, DidActivate);
   // QuestUI::Register::RegisterMainMenuModSettingsViewController(modInfo,
   // DidActivate);
-  BSML::Register::RegisterSettingsMenu("Twitch Song Request", DidActivate,
-                                       false);
+  BSML::Register::RegisterSettingsMenu("Twitch-ReQuest", DidActivate, false);
 
   INFO("Installing hooks...");
   INSTALL_HOOK(Logger, SceneManager_Internal_ActiveSceneChanged);
