@@ -3,6 +3,7 @@
 #include "UnityEngine/RectTransform.hpp"
 #include "main.hpp"
 #include "bsml/shared/BSML/MainThreadScheduler.hpp"
+#include "songcore/shared/SongCore.hpp"
 
 DEFINE_TYPE(TSRQ, CustomSongListTableCell)
 namespace TSRQ {
@@ -10,6 +11,19 @@ CustomSongListTableCell *CustomSongListTableCell::PopulateWithSongData(
     TSRQ::SongListObject *songListObject) {
 
   std::optional<BeatSaver::Models::Beatmap> song = songListObject->song;
+
+  if (songListObject->isDownloaded) {
+      auto versions = song.value().GetVersions();
+      if (!versions.empty()) {
+          auto &beatmap = versions.front();
+          std::string mapHash = beatmap.GetHash();
+          auto level = SongCore::API::Loading::GetLevelByHash(mapHash);
+          if (level == nullptr) {
+              songListObject->isDownloaded = false;
+              songListObject->songNotFound = true;
+          }
+      }
+  }
 
   songName->set_text(song.value().GetName());
   levelAuthorName->set_text(song.value().GetMetadata().GetLevelAuthorName());
@@ -32,6 +46,9 @@ CustomSongListTableCell *CustomSongListTableCell::PopulateWithSongData(
   } else if (songListObject->downloading) {
     statusLabel->set_text(fmt::format("Downloading... {:.0f}%", songListObject->progress * 100));
     statusLabel->set_color(UnityEngine::Color::get_cyan());
+  } else if (songListObject->songNotFound) {
+    statusLabel->set_text("Song not found. Click to redownload");
+    statusLabel->set_color(UnityEngine::Color(1.0f, 0.5f, 0.0f, 1.0f));
   } else if (songListObject->failed) {
     statusLabel->set_text("Download Failed. Click to retry");
     statusLabel->set_color(UnityEngine::Color::get_red());

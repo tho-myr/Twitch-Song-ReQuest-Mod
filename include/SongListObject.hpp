@@ -18,6 +18,7 @@ namespace TSRQ
         bool downloading = false;
         bool isDownloaded = false;
         bool failed = false;
+        bool songNotFound = false;
         float progress = 0.0f;
         UnityEngine::Sprite* cover = nullptr;
         std::function<void(float)> progressUpdateCallback;

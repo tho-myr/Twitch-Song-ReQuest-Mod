@@ -177,7 +177,7 @@ void TSRQ::FloatingMenu::SelectSong(HMUI::TableView *table, int id) {
         } else {
           INFO("TSRQ: level is empty");
           songList[id]->setIsDownloaded(false);
-          songList[id]->setFailed(true);
+          songList[id]->songNotFound = true;
           this->RefreshTable(false);
           return;
         }
@@ -189,6 +189,8 @@ void TSRQ::FloatingMenu::SelectSong(HMUI::TableView *table, int id) {
 
   songList[id]->downloading = true;
   songList[id]->progress = 0.0f;
+  songList[id]->songNotFound = false;
+  songList[id]->failed = false;
   this->RefreshTable(false);
 
   std::thread([this, id] {
